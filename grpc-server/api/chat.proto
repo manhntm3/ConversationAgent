@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option go_package = "./.";
+option java_multiple_files = true;
+option java_package = "com.llmchat";
+option java_outer_classname = "ChatProto";
+
+// The service definition.
+service ChatService {
+  // Sends a prompt
+  rpc SaySomething (PromptRequest) returns (PromptReply) {}
+}
+
+// The request message containing the prompt
+message PromptRequest {
+  string message = 1;
+}
+
+// The response message containing the replied prompt
+message PromptReply {
+  string message = 1;
+}
