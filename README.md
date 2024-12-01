@@ -52,6 +52,7 @@ Step to run AkkaHTTP server:
 ```
 sbt clean compile
 sbt "runMain com.llmchat.RESTServer"
+sbt clean compile test
 ```
 
 Step to run gRPC server:
@@ -84,5 +85,4 @@ A sample conversation is showed in [here](./SampleConversation)
 - These LLMs has been industrialised, meaning that they will very much useful in answer a specific question, but terrible in start/continue a conversation. I think this is mostly because they are trained that way.
 
 ## Limitation
-- I tried to set up API Gateway as a reverse proxy and tried to send HTTP/2 request to API Gateway but haven't find a way, so I decided to implement a intermediate gRPC server
-- 
+- I tried to set up API Gateway as a reverse proxy and tried to send HTTP/2 request to API Gateway but haven't find a way, so I decided to implement a intermediate gRPC server instead.
