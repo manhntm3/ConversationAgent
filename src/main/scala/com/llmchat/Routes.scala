@@ -7,7 +7,6 @@ import akka.http.scaladsl.server.Route
 import scala.concurrent.Future
 import akka.actor.typed.ActorSystem
 import akka.util.Timeout
-import akka.grpc.GrpcClientSettings
 import com.llmchat.utils.AppLogger
 
 import scala.util.Failure
@@ -15,20 +14,19 @@ import scala.util.Success
 
 //#import-json-formats
 //#user-routes-class
-class Routes()(implicit val system: ActorSystem[_]) {
+class Routes(val client : ChatServiceClient, timeout: Timeout)(implicit val system: ActorSystem[_]) {
   val logger = AppLogger("Routes")
-
   //#user-routes-class
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
   import JsonFormats._
 
+  // Function to forward to the GRPC server
   private def forwardToGrpcApiGateway(prompt: Prompt): Future[PromptReply] = {
-    val client = ChatServiceClient(GrpcClientSettings.fromConfig("ChatService"))
     logger.info(s"Performing request: $prompt")
     val request = PromptRequest(prompt.prompt)
     client.saySomething(request)
   }
-  private implicit val timeout: Timeout = Timeout.create(system.settings.config.getDuration("rest-server.routes.ask-timeout"))
+  private implicit val requestTimeout: Timeout = timeout
 
   //#all-routes
   //#users-get-post

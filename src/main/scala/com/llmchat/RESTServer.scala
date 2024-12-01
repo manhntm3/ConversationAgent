@@ -1,16 +1,19 @@
 package com.llmchat
 
 import com.llmchat.utils.{AppConfig, AppLogger}
-
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
+import akka.grpc.GrpcClientSettings
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
+import akka.util.Timeout
+import scala.concurrent.duration._
 
 import scala.util.{Failure, Success}
 
 object RESTServer {
   val logger = AppLogger("REST-Server")
+  val conf = AppConfig()
 
   //#start-http-server
   private def startHttpServer(routes: Route)(implicit system: ActorSystem[_]): Unit = {
@@ -18,7 +21,8 @@ object RESTServer {
     import system.executionContext
     logger.info("Setting up HTTP server...")
 
-    val futureBinding = Http().newServerAt("0.0.0.0", 8000).bind(routes)
+    // Bind to local 0.0.0.0
+    val futureBinding = Http().newServerAt("0.0.0.0", conf.getInt("rest-server.port")).bind(routes)
 
     futureBinding.onComplete {
       case Success(binding) =>
@@ -42,13 +46,13 @@ object RESTServer {
 //      logger.error("Cannot find the input argument!")
 //      return
 //    }
-    logger.info("Start loading config")
-    val conf = AppConfig()
-    logger.info("Load config success")
 
     logger.info("Set up server")
     val rootBehavior = Behaviors.setup[Nothing] { context =>
-      val routes = new Routes()(context.system)
+      val clientSettings = GrpcClientSettings.fromConfig("ChatService")(context.system)
+      val client = ChatServiceClient(clientSettings)(context.system)
+      val timeout = Timeout.create(context.system.settings.config.getDuration("rest-server.routes.ask-timeout"))
+      val routes = new Routes(client, timeout)(context.system)
       startHttpServer(routes.route)(context.system)
       Behaviors.empty
     }
