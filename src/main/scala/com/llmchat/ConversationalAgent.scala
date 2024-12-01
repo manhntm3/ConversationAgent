@@ -51,8 +51,8 @@ object ConversationalAgent {
           .setNumPredict(ollamaConf.getInt("num_predict"))
           .build()
       )
-      logger.debug(s"INPUT to Ollama: $generateNextQueryPrompt")
-      logger.debug(s"Ollama OUTPUT: ${result.getResponse}")
+      logger.info(s"INPUT to Ollama: $generateNextQueryPrompt")
+      logger.info(s"Ollama OUTPUT: ${result.getResponse}")
       result.getResponse
     } catch {
       case e: Exception =>

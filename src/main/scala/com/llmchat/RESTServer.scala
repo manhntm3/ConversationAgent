@@ -18,7 +18,7 @@ object RESTServer {
     import system.executionContext
     logger.info("Setting up HTTP server...")
 
-    val futureBinding = Http().newServerAt("localhost", 8000).bind(routes)
+    val futureBinding = Http().newServerAt("0.0.0.0", 8000).bind(routes)
 
     futureBinding.onComplete {
       case Success(binding) =>
