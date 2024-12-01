@@ -38,7 +38,7 @@ object ConversationalAgent {
     "What is the best way to address: "
   )
 
-  private def processWithOllama(ollamaAPI : OllamaAPI, input: String)(implicit ec: ExecutionContext): Future[String] = Future {
+  def processWithOllama(ollamaAPI : OllamaAPI, input: String)(implicit ec: ExecutionContext): Future[String] = Future {
     val randomGuide = guideStrings(Random.nextInt(guideStrings.length))
     val generateNextQueryPrompt = randomGuide + input
     try {
@@ -61,7 +61,7 @@ object ConversationalAgent {
     }
   }
   
-  private def forwardToServer(prompt: Prompt)(implicit sys: ActorSystem[_]): Future[HttpResponse] = {
+  def forwardToServer(prompt: Prompt)(implicit sys: ActorSystem[_]): Future[HttpResponse] = {
     import sys.executionContext
     
     import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
@@ -82,62 +82,52 @@ object ConversationalAgent {
     Http()(sys).singleRequest(request)
   }
 
-  private def startConversation(initialPrompt: Prompt, maxIterations: Int = 10): Unit = {
-    implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty[Nothing], "ConversationalAgent")
-    implicit val ec: ExecutionContextExecutor = system.executionContext
+  def startConversation(initialPrompt: Prompt,
+                                ollamaAPI: OllamaAPI,
+                                forwardToServerFunc: Prompt => Future[HttpResponse],
+                                maxIterations: Int = 10
+                               )(implicit system: ActorSystem[_], ec: ExecutionContext): Future[Unit] = {
     
-    val ollamaAPI: OllamaAPI = new OllamaAPI(ollamaConf.getString("host"))
-    ollamaAPI.setVerbose(false)
-    ollamaAPI.setRequestTimeoutSeconds(ollamaConf.getInt("request-timeout-seconds"))
-    
-    def loop(prompt: Prompt, iteration: Int): Unit = {
+    def loop(prompt: Prompt, iteration: Int): Future[Unit] = {
       if (iteration > maxIterations) {
         logger.warn("Reached maximum iterations. Conversation ended.")
-        system.terminate()
+        Future.unit
       } else {
         logger.debug(s"Iteration $iteration: Sending prompt to server.")
         val promptLog = prompt.prompt.replaceAll("\n", s"\n${AppLogger.YELLOW}")
         logger.info(AppLogger.YELLOW + s" User1: ${promptLog}" + AppLogger.RESET)
 
         val responseFuture: Future[String] = for {
-          httpResponse <- forwardToServer(prompt)(system)
+          httpResponse <- forwardToServerFunc(prompt)
           responseString <- Unmarshal(httpResponse.entity).to[String]
         } yield responseString
 
-        responseFuture.onComplete {
-          case Success(serverResponse) =>
-            logger.debug(s"Received response from server: $serverResponse")
+        responseFuture.flatMap { serverResponse =>
+          logger.debug(s"Received response from server: $serverResponse")
 
-            // Parse the outer JSON
-            val parsedOuterJson = parse(serverResponse).getOrElse(Json.Null)
+          // Parse the outer JSON
+          val parsedOuterJson = parse(serverResponse).getOrElse(Json.Null)
 
-            // Extract the `body` field as a JSON string
-            val bodyString = parsedOuterJson.hcursor.downField("body").as[String].getOrElse("")
+          // Extract the `body` field as a JSON string
+          val bodyString = parsedOuterJson.hcursor.downField("body").as[String].getOrElse("")
 
-            // Parse the inner JSON (body)
-            val parsedInnerJson = parse(bodyString).getOrElse(Json.Null)
+          // Parse the inner JSON (body)
+          val parsedInnerJson = parse(bodyString).getOrElse(Json.Null)
 
-            val generationContent = parsedInnerJson.hcursor.downField("answer").as[String].getOrElse("")
+          val generationContent = parsedInnerJson.hcursor.downField("answer").as[String].getOrElse("")
 
-            val generationContentLog = generationContent.replaceAll("\n", s"\n${AppLogger.GREEN}")
-            logger.info(AppLogger.GREEN + s"User2: $generationContentLog" + AppLogger.RESET)
+          val generationContentLog = generationContent.replaceAll("\n", s"\n${AppLogger.GREEN}")
+          logger.info(AppLogger.GREEN + s"User2: $generationContentLog" + AppLogger.RESET)
 
-            val ollamaFuture = processWithOllama(ollamaAPI, generationContent)(ec)
-
-            ollamaFuture.onComplete {
-              case Success(ollamaResponse) =>
-                logger.debug(s"Ollama processed response: $ollamaResponse")
-                val nextPrompt = Prompt(ollamaResponse)
-                loop(nextPrompt, iteration + 1)
-
-              case Failure(ex) =>
-                logger.error(s"Ollama processing failed: ${ex.getMessage}")
-                system.terminate()
-            }
-
-          case Failure(ex) =>
-            logger.error(s"Failed to get response from server: ${ex.getMessage}")
-            system.terminate()
+          processWithOllama(ollamaAPI, generationContent).flatMap { ollamaResponse =>
+            logger.debug(s"Ollama processed response: $ollamaResponse")
+            val nextPrompt = Prompt(ollamaResponse)
+            loop(nextPrompt, iteration + 1)
+          }
+        }.recoverWith {
+          case ex =>
+            logger.error(s"Error during conversation: ${ex.getMessage}")
+            Future.unit
         }
       }
     }
@@ -147,7 +137,15 @@ object ConversationalAgent {
 
   def main(args: Array[String]): Unit = {
 
+    implicit val system: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty[Nothing], "ConversationalAgent")
+    implicit val ec: ExecutionContextExecutor = system.executionContext
+
+    val ollamaAPI: OllamaAPI = new OllamaAPI(ollamaConf.getString("host"))
+    ollamaAPI.setVerbose(false)
+    ollamaAPI.setRequestTimeoutSeconds(ollamaConf.getInt("request-timeout-seconds"))
+
     val beginPrompt = Prompt(args.mkString(" "))
-    startConversation(beginPrompt)
+    startConversation(beginPrompt, ollamaAPI = ollamaAPI, forwardToServerFunc = forwardToServer)
+      .onComplete(_ => system.terminate())
   }
 }

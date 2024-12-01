@@ -76,4 +76,13 @@ sbt clean compile test
 - Install java, scala, go with the specified version
 - Run RESTful server and gRPC server 
 
+### Results
+A sample conversation is showed in [here](./SampleConversation)
+
+#### Comments
+
+- These LLMs has been industrialised, meaning that they will very much useful in answer a specific question, but terrible in start/continue a conversation. I think this is mostly because they are trained that way.
+
 ## Limitation
+- I tried to set up API Gateway as a reverse proxy and tried to send HTTP/2 request to API Gateway but haven't find a way, so I decided to implement a intermediate gRPC server
+- 
