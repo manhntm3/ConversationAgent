@@ -71,9 +71,10 @@ func (s *server) SaySomething(ctx context.Context, in *pb.PromptRequest) (*pb.Pr
 	}
 
 	// Combine the result of the external API with the greeting message
-	message := fmt.Sprintf("Hello %s! External API Response: %s", in.GetMessage(), apiResponse)
+	// message := fmt.Sprintf("Hello %s! External API Response: %s", in.GetMessage(), apiResponse)
 
-	return &pb.PromptReply{Message: message}, nil
+	// return &pb.PromptReply{Message: message}, nil
+	return &pb.PromptReply{Message: apiResponse}, nil
 }
 
 func main() {

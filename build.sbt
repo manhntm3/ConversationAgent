@@ -9,7 +9,7 @@ enablePlugins(AkkaGrpcPlugin)
 
 resolvers += "Akka library repository".at("https://repo.akka.io/maven")
 
-//fork := true
+fork := true
 
 lazy val root = (project in file(".")).
   settings(
@@ -23,6 +23,8 @@ lazy val root = (project in file(".")).
       "com.typesafe.akka" %% "akka-actor-typed"         % akkaVersion,
       "com.typesafe.akka" %% "akka-stream"              % akkaVersion,
       "com.typesafe.akka" %% "akka-pki"                 % akkaVersion,
+      "io.circe"          %% "circe-core"               % "0.14.10",
+      "io.circe"          %% "circe-parser"             % "0.14.10",
       "ch.qos.logback"    % "logback-classic"           % "1.5.7",
       "com.typesafe"      %  "config"                   % "1.4.3",
       "io.github.ollama4j" % "ollama4j"                 % "1.0.89",
