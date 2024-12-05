@@ -3,7 +3,7 @@ First Name: Manh \
 Last Name: Nguyen \
 UIN: 650327734 \
 UIC Mail: mnguy104@uic.edu \
-Link to youtube video: 
+Link to youtube video: https://youtu.be/Ttq_HudgCkU
 
 ## Homework 3
 ### Description
@@ -68,6 +68,26 @@ sbt clean compile
 sbt "runMain com.llmchat.ConversationalAgent How does dog express love ?"
 sbt clean compile test
 ```
+
+### cURL command to perform request
+
+cURL command to request lambda (can request)
+```
+curl --location 'https://2jn8ttaa1l.execute-api.us-east-1.amazonaws.com/myStage/bedrock' \
+--data '{
+    "prompt": "What is the capital of France?"
+}'
+```
+
+cURL to request to EC2:
+```
+curl --location '98.83.117.122:8000/chat' \
+--header 'Content-Type: application/json' \
+--data '{
+    "prompt": "How do dog express love"
+}'
+```
+At later time the request might not working because EC2 request has been nuked out. Contact owner to make request on your own.
 
 ### Deploy to EC2
 
