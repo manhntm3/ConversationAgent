@@ -3,7 +3,6 @@ First Name: Manh \
 Last Name: Nguyen \
 UIN: 650327734 \
 UIC Mail: mnguy104@uic.edu \
-Link to youtube video: https://youtu.be/Ttq_HudgCkU
 
 ## Homework 3
 ### Description
@@ -73,7 +72,7 @@ sbt clean compile test
 
 cURL command to request lambda (can request)
 ```
-curl --location 'https://2jn8ttaa1l.execute-api.us-east-1.amazonaws.com/myStage/bedrock' \
+curl --location 'location' \
 --data '{
     "prompt": "What is the capital of France?"
 }'
@@ -81,7 +80,7 @@ curl --location 'https://2jn8ttaa1l.execute-api.us-east-1.amazonaws.com/myStage/
 
 cURL to request to EC2:
 ```
-curl --location '98.83.117.122:8000/chat' \
+curl --location 'AWS location:8000/chat' \
 --header 'Content-Type: application/json' \
 --data '{
     "prompt": "How do dog express love"
