@@ -1,9 +1,3 @@
-### Student information
-First Name: Manh \
-Last Name: Nguyen \
-UIN: 650327734 \
-UIC Mail: mnguy104@uic.edu \
-
 ## Homework 3
 ### Description
 Description is in [here](./Homeworks/Homework3.md).
